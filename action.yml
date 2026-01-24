@@ -1,0 +1,102 @@
+name: 'TerraVision - Terraform Architecture Diagrams'
+description: 'Generate cloud architecture diagrams from Terraform code using TerraVision'
+author: 'patrickchugh'
+
+branding:
+  icon: 'image'
+  color: 'blue'
+
+inputs:
+  source:
+    description: 'Path to Terraform source directory (relative to workspace root)'
+    required: true
+    default: '.'
+  outfile:
+    description: 'Output file path (without extension)'
+    required: false
+    default: 'architecture'
+  format:
+    description: 'Output format: png, svg, or both'
+    required: false
+    default: 'png'
+  varfile:
+    description: 'Path to .tfvars file for variable substitution'
+    required: false
+    default: ''
+  annotate:
+    description: 'Path to terravision.yml annotation file'
+    required: false
+    default: ''
+  extra-args:
+    description: 'Additional arguments to pass to terravision draw'
+    required: false
+    default: ''
+
+outputs:
+  diagram-files:
+    description: 'Comma-separated list of generated diagram file paths'
+    value: ${{ steps.generate.outputs.files }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Check prerequisites
+      shell: bash
+      run: |
+        if ! command -v terraform &> /dev/null && ! command -v tofu &> /dev/null; then
+          echo "::error::Terraform or OpenTofu not found on PATH. Add hashicorp/setup-terraform or opentofu/setup-opentofu before this step."
+          exit 1
+        fi
+
+    - name: Install Graphviz
+      shell: bash
+      run: |
+        if ! command -v dot &> /dev/null; then
+          if command -v apt-get &> /dev/null; then
+            sudo apt-get update -qq && sudo apt-get install -y -qq graphviz
+          elif command -v brew &> /dev/null; then
+            brew install graphviz
+          else
+            echo "::error::Cannot install Graphviz. Please install it manually before this step."
+            exit 1
+          fi
+        fi
+
+    - name: Install TerraVision
+      shell: bash
+      run: pip install terravision
+
+    - name: Generate Diagrams
+      id: generate
+      shell: bash
+      run: |
+        ARGS="--source ${{ inputs.source }}"
+
+        if [ -n "${{ inputs.outfile }}" ]; then
+          ARGS="$ARGS --outfile ${{ inputs.outfile }}"
+        fi
+
+        if [ -n "${{ inputs.varfile }}" ]; then
+          ARGS="$ARGS --varfile ${{ inputs.varfile }}"
+        fi
+
+        if [ -n "${{ inputs.annotate }}" ]; then
+          ARGS="$ARGS --annotate ${{ inputs.annotate }}"
+        fi
+
+        if [ -n "${{ inputs.extra-args }}" ]; then
+          ARGS="$ARGS ${{ inputs.extra-args }}"
+        fi
+
+        FILES=""
+
+        if [ "${{ inputs.format }}" = "both" ]; then
+          terravision draw $ARGS --format png
+          terravision draw $ARGS --format svg
+          FILES="${{ inputs.outfile }}.png,${{ inputs.outfile }}.svg"
+        else
+          terravision draw $ARGS --format ${{ inputs.format }}
+          FILES="${{ inputs.outfile }}.${{ inputs.format }}"
+        fi
+
+        echo "files=$FILES" >> $GITHUB_OUTPUT
