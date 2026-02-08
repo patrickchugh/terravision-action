@@ -27,6 +27,14 @@ inputs:
     description: 'Path to terravision.yml annotation file'
     required: false
     default: ''
+  planfile:
+    description: 'Path to pre-generated Terraform plan JSON file (from terraform show -json). When set, Terraform is not required.'
+    required: false
+    default: ''
+  graphfile:
+    description: 'Path to pre-generated Terraform graph DOT file (from terraform graph). Required when planfile is set.'
+    required: false
+    default: ''
   extra-args:
     description: 'Additional arguments to pass to terravision draw'
     required: false
@@ -43,9 +51,17 @@ runs:
     - name: Check prerequisites
       shell: bash
       run: |
-        if ! command -v terraform &> /dev/null && ! command -v tofu &> /dev/null; then
-          echo "::error::Terraform or OpenTofu not found on PATH. Add hashicorp/setup-terraform or opentofu/setup-opentofu before this step."
-          exit 1
+        if [ -n "${{ inputs.planfile }}" ]; then
+          echo "Using pre-generated plan file — skipping Terraform check"
+          if [ -z "${{ inputs.graphfile }}" ]; then
+            echo "::error::--planfile requires --graphfile. Please provide both inputs."
+            exit 1
+          fi
+        else
+          if ! command -v terraform &> /dev/null && ! command -v tofu &> /dev/null; then
+            echo "::error::Terraform or OpenTofu not found on PATH. Add hashicorp/setup-terraform or opentofu/setup-opentofu before this step."
+            exit 1
+          fi
         fi
 
     - name: Install Graphviz
@@ -82,6 +98,14 @@ runs:
 
         if [ -n "${{ inputs.annotate }}" ]; then
           ARGS="$ARGS --annotate ${{ inputs.annotate }}"
+        fi
+
+        if [ -n "${{ inputs.planfile }}" ]; then
+          ARGS="$ARGS --planfile ${{ inputs.planfile }}"
+        fi
+
+        if [ -n "${{ inputs.graphfile }}" ]; then
+          ARGS="$ARGS --graphfile ${{ inputs.graphfile }}"
         fi
 
         if [ -n "${{ inputs.extra-args }}" ]; then
