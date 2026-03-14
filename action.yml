@@ -68,6 +68,9 @@ runs:
       id: generate
       shell: bash
       run: |
+        # Make workspace writable by the container's terravision user
+        chmod -R a+rw "${{ github.workspace }}"
+
         ARGS="--source /github/workspace/${{ inputs.source }}"
 
         if [ -n "${{ inputs.outfile }}" ]; then
