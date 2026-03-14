@@ -64,46 +64,30 @@ runs:
           fi
         fi
 
-    - name: Install Graphviz
-      shell: bash
-      run: |
-        if command -v apt-get &> /dev/null; then
-          sudo apt-get update -qq && sudo apt-get install -y -qq graphviz libgraphviz-dev
-        elif command -v brew &> /dev/null; then
-          brew install graphviz
-        else
-          echo "::error::Cannot install Graphviz. Please install it manually before this step."
-          exit 1
-        fi
-
-    - name: Install TerraVision
-      shell: bash
-      run: pip install terravision
-
     - name: Generate Diagrams
       id: generate
       shell: bash
       run: |
-        ARGS="--source ${{ inputs.source }}"
+        ARGS="--source /github/workspace/${{ inputs.source }}"
 
         if [ -n "${{ inputs.outfile }}" ]; then
-          ARGS="$ARGS --outfile ${{ inputs.outfile }}"
+          ARGS="$ARGS --outfile /github/workspace/${{ inputs.outfile }}"
         fi
 
         if [ -n "${{ inputs.varfile }}" ]; then
-          ARGS="$ARGS --varfile ${{ inputs.varfile }}"
+          ARGS="$ARGS --varfile /github/workspace/${{ inputs.varfile }}"
         fi
 
         if [ -n "${{ inputs.annotate }}" ]; then
-          ARGS="$ARGS --annotate ${{ inputs.annotate }}"
+          ARGS="$ARGS --annotate /github/workspace/${{ inputs.annotate }}"
         fi
 
         if [ -n "${{ inputs.planfile }}" ]; then
-          ARGS="$ARGS --planfile ${{ inputs.planfile }}"
+          ARGS="$ARGS --planfile /github/workspace/${{ inputs.planfile }}"
         fi
 
         if [ -n "${{ inputs.graphfile }}" ]; then
-          ARGS="$ARGS --graphfile ${{ inputs.graphfile }}"
+          ARGS="$ARGS --graphfile /github/workspace/${{ inputs.graphfile }}"
         fi
 
         if [ -n "${{ inputs.extra-args }}" ]; then
@@ -113,11 +97,11 @@ runs:
         FILES=""
 
         if [ "${{ inputs.format }}" = "both" ]; then
-          terravision draw $ARGS --format png
-          terravision draw $ARGS --format svg
+          docker run --rm -v "${{ github.workspace }}:/github/workspace" patrickchugh/terravision draw $ARGS --format png
+          docker run --rm -v "${{ github.workspace }}:/github/workspace" patrickchugh/terravision draw $ARGS --format svg
           FILES="${{ inputs.outfile }}.png,${{ inputs.outfile }}.svg"
         else
-          terravision draw $ARGS --format ${{ inputs.format }}
+          docker run --rm -v "${{ github.workspace }}:/github/workspace" patrickchugh/terravision draw $ARGS --format ${{ inputs.format }}
           FILES="${{ inputs.outfile }}.${{ inputs.format }}"
         fi
 
