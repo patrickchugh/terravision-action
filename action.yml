@@ -67,15 +67,13 @@ runs:
     - name: Install Graphviz
       shell: bash
       run: |
-        if ! command -v dot &> /dev/null; then
-          if command -v apt-get &> /dev/null; then
-            sudo apt-get update -qq && sudo apt-get install -y -qq graphviz libgraphviz-dev
-          elif command -v brew &> /dev/null; then
-            brew install graphviz
-          else
-            echo "::error::Cannot install Graphviz. Please install it manually before this step."
-            exit 1
-          fi
+        if command -v apt-get &> /dev/null; then
+          sudo apt-get update -qq && sudo apt-get install -y -qq graphviz libgraphviz-dev
+        elif command -v brew &> /dev/null; then
+          brew install graphviz
+        else
+          echo "::error::Cannot install Graphviz. Please install it manually before this step."
+          exit 1
         fi
 
     - name: Install TerraVision
