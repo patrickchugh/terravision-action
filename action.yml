@@ -97,11 +97,11 @@ runs:
         FILES=""
 
         if [ "${{ inputs.format }}" = "both" ]; then
-          docker run --rm --user "$(id -u):$(id -g)" -v "${{ github.workspace }}:/github/workspace" patrickchugh/terravision draw $ARGS --format png
-          docker run --rm --user "$(id -u):$(id -g)" -v "${{ github.workspace }}:/github/workspace" patrickchugh/terravision draw $ARGS --format svg
+          docker run --rm --user "$(id -u):$(id -g)" -e HOME=/home/terravision -v "${{ github.workspace }}:/github/workspace" patrickchugh/terravision draw $ARGS --format png
+          docker run --rm --user "$(id -u):$(id -g)" -e HOME=/home/terravision -v "${{ github.workspace }}:/github/workspace" patrickchugh/terravision draw $ARGS --format svg
           FILES="${{ inputs.outfile }}.png,${{ inputs.outfile }}.svg"
         else
-          docker run --rm --user "$(id -u):$(id -g)" -v "${{ github.workspace }}:/github/workspace" patrickchugh/terravision draw $ARGS --format ${{ inputs.format }}
+          docker run --rm --user "$(id -u):$(id -g)" -e HOME=/home/terravision -v "${{ github.workspace }}:/github/workspace" patrickchugh/terravision draw $ARGS --format ${{ inputs.format }}
           FILES="${{ inputs.outfile }}.${{ inputs.format }}"
         fi
 
